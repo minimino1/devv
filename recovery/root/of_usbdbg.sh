@@ -2,6 +2,7 @@
 # OFRP USB gadget diagnostics — writes state to /persist/of_debug.log
 # Runs after post-fs. Samples every 3s for 30s total (10 samples).
 
+SLOT=$(getprop ro.boot.slot_suffix)
 LOG=/persist/of_debug.log
 DMESG_LOG=/persist/of_dmesg.log
 
@@ -40,8 +41,8 @@ ls /vendor/etc/vintf/ 2>&1 | head -5 >> "$LOG"
 # mapper/vendor_a готов только сейчас (recovery активировал logical partitions)
 echo "=== vendor mount + hwservicemanager ===" >> "$LOG"
 if [ ! -f /vendor/etc/vintf/manifest.xml ] && [ ! -d /vendor/etc/vintf ]; then
-  echo "mounting /vendor from mapper/vendor_a:" >> "$LOG"
-  mount -t erofs -o ro /dev/block/mapper/vendor_a /vendor 2>&1 >> "$LOG"
+  echo "mounting /vendor from mapper/vendor${SLOT}:" >> "$LOG"
+  mount -t erofs -o ro /dev/block/mapper/vendor${SLOT} /vendor 2>&1 >> "$LOG"
   echo "  mount result: $?" >> "$LOG"
 fi
 ls /vendor/bin/qseecomd /vendor/bin/hw/android.hardware.keymaster@4.0-service-qti 2>&1 >> "$LOG"
@@ -167,10 +168,10 @@ ls /vendor/firmware_mnt/image/adsp.mdt 2>&1 >> "$LOG"
 
 # Форс mount если ещё не смонтировано (init мог не смочь)
 if [ ! -f /vendor/firmware_mnt/image/adsp.mdt ]; then
-  echo "attempt manual mount modem_a partition:" >> "$LOG"
+  echo "attempt manual mount modem${SLOT} partition:" >> "$LOG"
   mkdir -p /vendor/firmware_mnt 2>&1 >> "$LOG"
   # A/B устройство — нужен явный slot suffix
-  mount -o ro -t vfat /dev/block/by-name/modem_a /vendor/firmware_mnt 2>&1 >> "$LOG"
+  mount -o ro -t vfat /dev/block/by-name/modem${SLOT} /vendor/firmware_mnt 2>&1 >> "$LOG"
   echo "mount result: $?" >> "$LOG"
   ls /vendor/firmware_mnt/image/ 2>&1 | head -5 >> "$LOG"
 fi

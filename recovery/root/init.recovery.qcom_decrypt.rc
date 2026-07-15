@@ -4,6 +4,10 @@
 
 # Override keystore2 — стандартный крашится в recovery (SIGSEGV при старте)
 # Используем /tmp вместо /data/misc/keystore
+on early-init
+    setprop keystore.boot_level 0
+
+
 service keystore2 /system/bin/keystore2 /tmp/misc/keystore
     user root
     group root keystore readproc log
@@ -13,7 +17,11 @@ service keystore2 /system/bin/keystore2 /tmp/misc/keystore
 
 # Override servicemanager — не нужен в recovery, убираем автостарт
 service servicemanager /system/bin/servicemanager
-    disabled
+    class core
+    user system
+    group system readproc
+    seclabel u:r:recovery:s0
+    onrestart setprop servicemanager.ready 0
     override
 
 on property:ro.crypto.state=encrypted && property:ro.crypto.type=file
@@ -22,9 +30,10 @@ on property:ro.crypto.state=encrypted && property:ro.crypto.type=file
 
 # Шаг 1: запуск qseecomd (QSEE daemon — нужен для TrustZone/keymaster)
 service vendor.qseecomd /vendor/bin/qseecomd
+    class core
     user root
-    group root drmrpc
-    setenv LD_LIBRARY_PATH /vendor/lib64:/system/lib64
+    group root
+    setenv LD_LIBRARY_PATH /vendor/lib64:/vendor/lib64/hw:/system/lib64
     disabled
     seclabel u:r:recovery:s0
 
@@ -60,11 +69,14 @@ service keystore /system/bin/keystore /tmp/misc/keystore
 
 # Цепочка запуска
 on property:ro.crypto.state=encrypted && property:ro.crypto.type=file
+    setprop keystore.boot_level 0
+    wait /dev/block/mapper/vendor${ro.boot.slot_suffix} 5
+    mount erofs /dev/block/mapper/vendor${ro.boot.slot_suffix} /vendor ro
     start vendor.qseecomd
 
 on property:vendor.sys.listeners.registered=true
-    start gatekeeper-1-0
-    start keymaster-4-0
+    start vendor.keymint-qti
+    start vendor.gatekeeper_default
 
 # После decrypt — останавливаем сервисы
 on property:twrp.all.users.decrypted=true

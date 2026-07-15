@@ -35,6 +35,7 @@ BOARD_KERNEL_TAGS_OFFSET := 0x00000100
 BOARD_BOOT_HEADER_VERSION := 4
 BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
 BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
+PRODUCT_PRECOMPILED_SEPOLICY := false
 
 # GKI 2.0 — init_boot содержит generic ramdisk (отключено: OFRP 12.1 не умеет init_boot)
 # BOARD_INIT_BOOT_HEADER_VERSION := 4
@@ -122,12 +123,26 @@ BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE := true
 BOARD_RAMDISK_USE_LZ4                    := true
 
 # Vendor modules для recovery — читаем актуальный список из стокового modules.load.recovery
-TW_LOAD_VENDOR_MODULES := "$(shell tr '\n' ' ' < $(DEVICE_PATH)/recovery/root/vendor/lib/modules/modules.load.recovery)"
+# Модули-спамеры, забивающие kmsg — не нужны в recovery
+TW_MODULE_BLACKLIST := aw9380x|aw_press
+
+# Vendor modules для recovery — стоковый список минус blacklist
+TW_LOAD_VENDOR_MODULES := "$(shell grep -vE '$(TW_MODULE_BLACKLIST)' $(DEVICE_PATH)/recovery/root/vendor/lib/modules/modules.load.recovery | tr '\n' ' ')"
+
+TW_EXCLUDE_DEFAULT_USB_INIT := true
+
+TW_DEFAULT_PROPS += \
+	keymaster_ver=4.1
+	sys.usb.configfs=1 \
+	sys.usb.controller=a600000.dwc3 \
+	ro.recovery.usb.vid=18D1 \
+	ro.recovery.usb.adb.pid=D001 \
+	ro.recovery.usb.fastboot.pid=4EE0
 
 # Шифрование — отключаем для первого теста
-TW_INCLUDE_CRYPTO          := true
+TW_INCLUDE_CRYPTO          := false
 TW_INCLUDE_CRYPTO_FBE      := false
-TW_INCLUDE_FBE_METADATA_DECRYPT := true
+TW_INCLUDE_FBE_METADATA_DECRYPT := false
 
 # AVB
 BOARD_AVB_ENABLE := true

@@ -4,12 +4,12 @@
 # Источник: fstab.default из vendor_boot
 
 # Динамические разделы (EROFS primary, ext4 fallback)
-/system         erofs   /dev/block/mapper/system_a              flags=display="System";slotselect;logical
-/system_ext     erofs   /dev/block/mapper/system_ext_a          flags=display="System Ext";slotselect;logical
-/product        erofs   /dev/block/mapper/product_a             flags=display="Product";slotselect;logical
-/vendor         erofs   /dev/block/mapper/vendor_a              flags=display="Vendor";slotselect;logical
-/odm            erofs   /dev/block/mapper/odm_a                 flags=display="ODM";slotselect;logical
-/vendor_dlkm    erofs   /dev/block/mapper/vendor_dlkm_a         flags=display="Vendor DLKM";slotselect;logical
+/system         erofs   /dev/block/mapper/system              flags=display="System";slotselect;logical;fsflags="ro";mounttodecrypt
+/system_ext     erofs   /dev/block/mapper/system_ext          flags=display="System Ext";slotselect;logical;fsflags="ro"
+/product        erofs   /dev/block/mapper/product             flags=display="Product";slotselect;logical;fsflags="ro"
+/vendor         erofs   /dev/block/mapper/vendor              flags=display="Vendor";slotselect;logical;fsflags="ro";mounttodecrypt
+/odm            erofs   /dev/block/mapper/odm                 flags=display="ODM";slotselect;logical;fsflags="ro"
+/vendor_dlkm    erofs   /dev/block/mapper/vendor_dlkm         flags=display="Vendor DLKM";slotselect;logical;fsflags="ro";mounttodecrypt
 # /system_dlkm — недоступен в OFRP 12.1 (AOSP 12 dynamic partitions не знают system_dlkm)
 
 # Boot разделы

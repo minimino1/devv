@@ -5,7 +5,6 @@ alias of:N*T*Cqcom,mpam-msc mpam_msc
 alias of:N*T*Cqcom,mpam-mscC* mpam_msc
 alias of:N*T*Cqcom,dummycc clk_dummy
 alias of:N*T*Cqcom,dummyccC* clk_dummy
-alias i2c:aw9380x_cap aw_press
 alias of:N*T*Cqcom,gic-intr-routing gic_intr_routing
 alias of:N*T*Cqcom,gic-intr-routingC* gic_intr_routing
 alias of:N*T*Cqcom,sun-tlmm pinctrl_sun

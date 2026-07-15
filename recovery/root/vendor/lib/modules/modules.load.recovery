@@ -232,7 +232,6 @@ repeater-qti-pmic-eusb2.ko
 pm8941-pwrkey.ko
 qcom-hv-haptics.ko
 goodix_fp.ko
-aw_press.ko
 i3c-master-msm-geni.ko
 qcom-pon.ko
 reboot-mode.ko

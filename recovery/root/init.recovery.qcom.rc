@@ -1,11 +1,9 @@
 import /init.recovery.qcom_decrypt.rc
 
-on early-init
-    setprop sys.usb.controller a600000.dwc3
-
 # CPU governor — ставим walt как можно раньше, чтобы не жарить на performance
 # NP3 sched-walt kernel, доступен prefer walt → schedutil → powersave
 on early-init
+    setprop sys.usb.configfs 1
     write /sys/devices/system/cpu/cpufreq/policy0/scaling_governor walt
     write /sys/devices/system/cpu/cpufreq/policy2/scaling_governor walt
     write /sys/devices/system/cpu/cpufreq/policy5/scaling_governor walt
@@ -19,12 +17,13 @@ on early-init
 
 # Ключевое из стокового Nothing recovery.qcom.rc — активирует UDC
 on property:ro.boot.usbcontroller=*
-    setprop sys.usb.controller ${ro.boot.usbcontroller}
     wait /sys/bus/platform/devices/${ro.boot.usb.dwc3_msm:-a600000.ssusb}/mode
     write /sys/bus/platform/devices/${ro.boot.usb.dwc3_msm:-a600000.ssusb}/mode peripheral
     wait /sys/class/udc/${ro.boot.usbcontroller} 1
 
 on init
+    setprop sys.usb.configfs 1
+    setprop sys.usb.controller a600000.dwc3
     export ANDROID_ROOT /system
     export ANDROID_DATA /data
     export EXTERNAL_STORAGE /sdcard
