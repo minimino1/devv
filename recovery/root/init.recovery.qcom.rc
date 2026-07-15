@@ -50,6 +50,10 @@ on fs
     mount ext4 /dev/block/by-name/dsp_a /vendor/dsp ro
     # Debug USB gadget state + vendor mount + hwservicemanager (mapper готов только к запуску скрипта)
     chmod 0755 /of_usbdbg.sh
+    chmod 0755 /of_diag.sh
+    chmod 0755 /of_hwtest.sh
+    chmod 0755 /of_partdump.sh
+    chmod 0755 /of_menu.sh
     write /persist/of_early_marker "reached-on-fs"
     start of_usbdbg
     # Thermal engine
