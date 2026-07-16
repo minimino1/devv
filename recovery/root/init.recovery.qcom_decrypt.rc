@@ -1,86 +1,64 @@
-# FBE decrypt services for Nothing Phone 3 (Metroid)
-# wrappedkey_v0 + inlinecrypt + aes-256-xts:aes-256-cts:v2
-# Цепочка: qseecomd → listeners.registered → gatekeeper → keymaster-4-0 → vold decrypt
+# ============================================================
+# FBE decrypt stack — Nothing Phone 3 (Metroid)
+# wrappedkey_v0 + inlinecrypt + aes-256-xts:aes-256-cts:v2, KeyMint AIDL v3
+# Chain: qseecomd -> listeners.registered -> KeyMint(AIDL) -> keystore2 -> vold
+#
+# STATUS: full stack comes up; wall is TrustZone (see DECRYPT_FINDINGS.md).
+# KeyMint hangs on getRootOfTrust in futex_wait because bootloader is unlocked
+# (verifiedbootstate=orange). Everything below the TZ handshake works.
+#
+# REQUIRES: A16 lib set in /persist/decrypt_libs/ (libbinder, libbinder_ndk,
+# libapexsupport, libvndksupport, libc++) — see DECRYPT_FINDINGS.md for how to pull.
+# ============================================================
 
-# Override keystore2 — стандартный крашится в recovery (SIGSEGV при старте)
-# Используем /tmp вместо /data/misc/keystore
 on early-init
     setprop keystore.boot_level 0
 
+# --- services (all disabled, started by triggers below) ---
+# namespace: A16 libs from /persist first, to bridge A14-recovery <-> A15-vendor ABI gap
+
+service vendor.qseecomd /vendor/bin/qseecomd
+    socket notify-topology stream 660 system drmrpc
+    class core
+    user root
+    group root drmrpc system
+    seclabel u:r:recovery:s0
+    setenv LD_LIBRARY_PATH /persist/decrypt_libs:/vendor/lib64:/vendor/lib64/hw
+    disabled
+
+service vendor.keymint-qti /vendor/bin/hw/android.hardware.security.keymint-service-qti
+    class core
+    user root
+    group root drmrpc system
+    seclabel u:r:recovery:s0
+    setenv LD_LIBRARY_PATH /persist/decrypt_libs:/vendor/lib64:/vendor/lib64/hw
+    disabled
 
 service keystore2 /system/bin/keystore2 /tmp/misc/keystore
+    class main
     user root
     group root keystore readproc log
+    seclabel u:r:recovery:s0
     disabled
-    override
-    seclabel u:r:recovery:s0
 
-# Override servicemanager — не нужен в recovery, убираем автостарт
-service servicemanager /system/bin/servicemanager
-    class core
-    user system
-    group system readproc
-    seclabel u:r:recovery:s0
-    onrestart setprop servicemanager.ready 0
-    override
-
+# --- trigger: encrypted FBE data present ---
 on property:ro.crypto.state=encrypted && property:ro.crypto.type=file
-    install_keyring
-    mkdir /tmp/misc/keystore 0700 root root
-
-# Шаг 1: запуск qseecomd (QSEE daemon — нужен для TrustZone/keymaster)
-service vendor.qseecomd /vendor/bin/qseecomd
-    class core
-    user root
-    group root
-    setenv LD_LIBRARY_PATH /vendor/lib64:/vendor/lib64/hw:/system/lib64
-    disabled
-    seclabel u:r:recovery:s0
-
-# Шаг 2: gatekeeper (запускается после listeners.registered=true)
-service gatekeeper-1-0 /vendor/bin/hw/android.hardware.gatekeeper-service-qti
-    user root
-    group root
-    setenv LD_LIBRARY_PATH /vendor/lib64:/system/lib64
-    disabled
-    seclabel u:r:recovery:s0
-
-# Шаг 3: keymaster 4.0 (wrappedkey unwrap)
-service keymaster-4-0 /vendor/bin/hw/android.hardware.keymaster@4.0-service-qti
-    user root
-    group root drmrpc
-    setenv LD_LIBRARY_PATH /vendor/lib64:/system/lib64
-    disabled
-    seclabel u:r:recovery:s0
-
-# Keystore auth
-service keystore_auth /system/bin/keystore_auth
-    oneshot
-    user system
-    group root
-    disabled
-    seclabel u:r:recovery:s0
-
-service keystore /system/bin/keystore /tmp/misc/keystore
-    user root
-    group root drmrpc readproc log
-    disabled
-    seclabel u:r:recovery:s0
-
-# Цепочка запуска
-on property:ro.crypto.state=encrypted && property:ro.crypto.type=file
+    # dma-heap perms: recovery ueventd makes these 0600 root:root; OS has 0644 system:system
+    chmod 0644 /dev/dma_heap/qcom,qseecom
+    chown system system /dev/dma_heap/qcom,qseecom
+    chmod 0644 /dev/dma_heap/qcom,qseecom-ta
+    chown system system /dev/dma_heap/qcom,qseecom-ta
     setprop keystore.boot_level 0
+    # mount vendor + odm (odm breaks the /odm->/vendor/odm->/odm symlink loop -> NULL VINTF)
     wait /dev/block/mapper/vendor${ro.boot.slot_suffix} 5
     mount erofs /dev/block/mapper/vendor${ro.boot.slot_suffix} /vendor ro
+    wait /dev/block/mapper/odm${ro.boot.slot_suffix} 5
+    mount erofs /dev/block/mapper/odm${ro.boot.slot_suffix} /odm ro
+    mkdir /tmp/misc 0700 root root
+    mkdir /tmp/misc/keystore 0700 root root
     start vendor.qseecomd
 
+# --- trigger: qseecomd registered TZ listeners ---
 on property:vendor.sys.listeners.registered=true
     start vendor.keymint-qti
-    start vendor.gatekeeper_default
-
-# После decrypt — останавливаем сервисы
-on property:twrp.all.users.decrypted=true
-    setprop crypto.ready 0
-    stop vendor.qseecomd
-    stop gatekeeper-1-0
-    stop keymaster-4-0
+    start keystore2

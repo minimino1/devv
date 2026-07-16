@@ -140,9 +140,9 @@ TW_DEFAULT_PROPS += \
 	ro.recovery.usb.fastboot.pid=4EE0
 
 # Шифрование — отключаем для первого теста
-TW_INCLUDE_CRYPTO          := false
-TW_INCLUDE_CRYPTO_FBE      := false
-TW_INCLUDE_FBE_METADATA_DECRYPT := false
+TW_INCLUDE_CRYPTO          := true
+TW_INCLUDE_CRYPTO_FBE      := true
+TW_INCLUDE_FBE_METADATA_DECRYPT := true
 
 # AVB
 BOARD_AVB_ENABLE := true
@@ -176,3 +176,15 @@ TW_EXTERNAL_STORAGE_PATH   := "/usb_otg"
 TW_EXTERNAL_STORAGE_MOUNT_POINT := "usb_otg"
 
 TW_DEVICE_VERSION := 0-Metroid
+
+# Настройки OFRP в /persist (не в зашифрованную data — decrypt невозможен на этом FBE-устройстве)
+# Настройки, тема, язык → /persist/Fox/ — переживают ребут
+FOX_SETTINGS_ROOT_DIRECTORY := /persist
+
+# === FBE decrypt parameters (see DECRYPT_FINDINGS.md) ===
+# Real vendor security patch (empty in recovery otherwise -> KeyMint patchlevel 0)
+VENDOR_SECURITY_PATCH := 2026-04-05
+# sku selects VINTF manifest_tuna.xml (else NULL VINTF MANIFEST -> KeyMint not declared)
+TW_DEFAULT_PROPS += ro.boot.product.vendor.sku=tuna
+TW_DEFAULT_PROPS += ro.vendor.build.security_patch=2026-04-05
+# NOTE: do NOT set keymaster_ver=4.1 — sends keystore2 to legacy HIDL instead of AIDL KeyMint

@@ -1,0 +1,3 @@
+Place A16 namespace libs here (see README_DECRYPT_DEV.md):
+  libbinder.so, libbinder_ndk.so, libvndksupport.so, libc++.so, libapexsupport.so
+Pull from a live A16 system. of_decrypt_libs.sh copies them to /persist/decrypt_libs at boot.
