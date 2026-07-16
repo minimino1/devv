@@ -23,8 +23,10 @@ the map so you don't re-walk the solved parts and can focus on the wall.
    absent in A14 recovery libs. Single-lib swaps cascade to libc++ vtable mismatch that
    kills every system binary. FIX: coherent A16 lib set in `/persist/decrypt_libs/`
    (persist mounts early, unencrypted), loaded first via `LD_LIBRARY_PATH`.
-   Libs needed: libbinder.so, libbinder_ndk.so, libapexsupport.so, libvndksupport.so, libc++.so
-   (pull from a live A16 system: `/system/lib64/` + `/apex/.../lib64/`).
+   Libs shipped in this branch (recovery/root/system/lib64_a16/): libbinder.so,
+   libbinder_ndk.so, libapexsupport.so, libvndksupport.so. NOTE: libc++ is loaded from
+   /vendor/lib64/libc++.so (A15) at runtime — the vendor one works, no A16 libc++ needed
+   in the persist set. Verified via `linker64 --list` during bring-up.
 
 2. **dma-heap** — "No ion heap of name qcom,qseecom" is NOT ion/SELinux. Recovery ueventd
    makes heap nodes 0600 root:root; OS has 0644 system:system. `chmod 0644` + `chown

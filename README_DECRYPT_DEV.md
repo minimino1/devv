@@ -3,20 +3,15 @@
 This branch integrates the full FBE decrypt stack that reaches the TrustZone wall.
 Read **DECRYPT_FINDINGS.md** first — it's the map of what works and where the wall is.
 
-## Before building — DROP IN THE A16 LIBS
-The namespace needs A16 libs that aren't in this repo (vendor libs, pull them yourself):
+## A16 libs — ALREADY INCLUDED
+The A16 namespace libs are shipped in recovery/root/system/lib64_a16/:
+  libbinder.so, libbinder_ndk.so, libapexsupport.so, libvndksupport.so
+(pulled from this device's A16 system). libc++ is NOT here — it loads from
+/vendor/lib64/libc++.so at runtime (the A15 vendor one works).
 
-    # from a live A16 system on the device (or A16 system image):
-    adb pull /system/lib64/libbinder.so
-    adb pull /system/lib64/libbinder_ndk.so
-    adb pull /system/lib64/libvndksupport.so
-    adb pull /system/lib64/libc++.so
-    # libapexsupport.so: from the runtime apex (/apex/com.android.runtime/lib64/ or /system/lib64/)
-
-Place all of them in:  recovery/root/system/lib64_a16/
-
-At boot, of_decrypt_libs.sh copies them into /persist/decrypt_libs (persist is a
+At boot, of_decrypt_libs.sh copies these into /persist/decrypt_libs (persist is a
 separate partition, not ramdisk). The decrypt services load them first via LD_LIBRARY_PATH.
+If you rebuild for a different vendor/firmware, re-pull matching libs into lib64_a16/.
 
 ## Build
     source build/envsetup.sh
